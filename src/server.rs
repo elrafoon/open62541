@@ -1,8 +1,8 @@
-use std::{ffi::c_void, ptr, sync::Arc};
+use std::{ffi::c_void, ops::Deref, ptr, sync::Arc};
 
 use open62541_sys::{
-    UA_ServerConfig, UA_Server_deleteNode, UA_Server_runUntilInterrupt, __UA_Server_addNode,
-    __UA_Server_write,
+    UA_Server, UA_ServerConfig, UA_Server_deleteNode, UA_Server_runUntilInterrupt,
+    __UA_Server_addNode, __UA_Server_write,
 };
 
 use crate::{ua, DataType, Error, ObjectNode, Result, VariableNode};
@@ -222,6 +222,29 @@ impl Server {
     pub fn write_variable_string(&self, node_id: &ua::NodeId, value: &str) -> Result<()> {
         let ua_variant = ua::Variant::scalar(ua::String::new(value)?);
         self.write_variable(node_id, &ua_variant)
+    }
+
+    /// Returns const pointer to value.
+    ///
+    /// # Safety
+    ///
+    /// The value is owned by `Self`. Ownership must not be given away, in whole or in parts. This
+    /// may happen when `open62541` functions are called that take ownership of values by pointer.
+    #[allow(dead_code)] // This is unused for now.
+    #[must_use]
+    pub unsafe fn as_ptr(&self) -> *const UA_Server {
+        unsafe { self.0.deref().as_ptr() }
+    }
+
+    /// Returns mutable pointer to value.
+    ///
+    /// # Safety
+    ///
+    /// The value is owned by `Self`. Ownership must not be given away, in whole or in parts. This
+    /// may happen when `open62541` functions are called that take ownership of values by pointer.
+    #[must_use]
+    pub unsafe fn as_mut_ptr(&mut self) -> *mut UA_Server {
+        unsafe { self.0.as_ptr().cast_mut() }
     }
 }
 
