@@ -1,6 +1,8 @@
-use std::slice;
+use std::{mem::MaybeUninit, ptr::addr_of_mut, slice};
 
-use crate::ArrayValue;
+use open62541_sys::{UA_ByteString_allocBuffer, UA_ByteString_init, UA_String};
+
+use crate::{ua, ArrayValue, Error};
 
 // Technically, `open62541_sys::ByteString` is an alias for `open62541_sys::String`. But we treat it
 // as a distinct type to improve type safety. The difference is that `String` contains valid Unicode
@@ -11,6 +13,21 @@ crate::data_type!(ByteString);
 // strings of `length` 0. It may also be `ptr::null()` for "invalid" strings. This is similar to how
 // OPC UA treats arrays (which also distinguishes between empty and invalid instances).
 impl ByteString {
+    pub fn new(s: &[u8]) -> Result<Self, Error> {
+        let mut inner = MaybeUninit::<UA_String>::zeroed();
+        let inner = unsafe {
+            UA_ByteString_init(inner.as_mut_ptr());
+            let mut inner = inner.assume_init();
+            let status_code =
+                ua::StatusCode::new(UA_ByteString_allocBuffer(addr_of_mut!(inner), s.len()));
+            Error::verify_good(&status_code)?;
+            std::ptr::copy_nonoverlapping(s.as_ptr(), inner.data, s.len());
+            inner
+        };
+
+        Ok(Self(inner))
+    }
+
     /// Checks if byte string is invalid.
     ///
     /// The invalid state is defined by OPC UA. It is a third state which is distinct from empty and
