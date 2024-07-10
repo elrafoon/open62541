@@ -2,7 +2,7 @@ use std::{ffi::c_void, ops::Deref, ptr, sync::Arc};
 
 use open62541_sys::{
     UA_Server, UA_ServerConfig, UA_Server_deleteNode, UA_Server_runUntilInterrupt,
-    __UA_Server_addNode, __UA_Server_write,
+    UA_Server_run_iterate, __UA_Server_addNode, __UA_Server_write,
 };
 
 use crate::{ua, DataType, Error, ObjectNode, Result, VariableNode};
@@ -279,5 +279,13 @@ impl ServerRunner {
             )
         });
         Error::verify_good(&status_code)
+    }
+
+    /// Executes a single iteraetion of the server's main loop
+    /// Returns how long we can wait until the next scheduled callback
+    pub fn run_iterate(&self, wait_internal: bool) -> std::time::Duration {
+        std::time::Duration::from_millis(
+            unsafe { UA_Server_run_iterate(self.0.as_ptr().cast_mut(), wait_internal) }.into(),
+        )
     }
 }
