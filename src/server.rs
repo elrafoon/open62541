@@ -72,6 +72,14 @@ impl ServerBuilder {
         // SAFETY: Ownership is not given away.
         unsafe { self.0.as_mut() }
     }
+
+    pub fn with_config_mut<F: FnOnce(&mut UA_ServerConfig) -> std::result::Result<(), E>, E>(
+        mut self,
+        f: F,
+    ) -> std::result::Result<Self, E> {
+        f(self.config_mut())?;
+        Ok(self)
+    }
 }
 
 /// OPC UA server.
