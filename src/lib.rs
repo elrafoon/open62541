@@ -70,6 +70,9 @@ mod server_nodes;
 mod service;
 pub mod ua;
 
+// re-export sys crate
+pub use open62541_sys as sys;
+
 #[cfg(feature = "tokio")]
 mod async_client;
 #[cfg(feature = "tokio")]
